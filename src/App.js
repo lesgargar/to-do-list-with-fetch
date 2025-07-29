@@ -2,27 +2,76 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import Task from "./Components/Task";
 import DeleteBtn from "./Components/DeleteBtn";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddTask from "./Components/AddTask";
 
 function App() {
   const [tasksList, setTasksList] = useState([]);
   const [inputValue, setInputValue] = useState("");
 
+  useEffect(() => {
+    fetch("https://playground.4geeks.com/todo/users/lesgarcia")
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data.todos);
+        setTasksList(data.todos);
+      });
+  }, []);
+
   const handleOnchange = (e) => {
     setInputValue(e.target.value);
-    console.log("cambion ", inputValue);
   };
 
   const handleOnAdd = () => {
-    setTasksList([...tasksList, inputValue]);
-    setInputValue("");
+    if (!inputValue.length) {
+      alert("Task cannot be empty");
+      return;
+    }
+    const newTodo = {
+      label: inputValue,
+      is_done: false,
+    };
+    fetch("https://playground.4geeks.com/todo/todos/lesgarcia", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newTodo),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Error al cargar datos");
+        }
+        return response.json();
+      })
+      .then((task) => {
+        setTasksList([...tasksList, task]);
+      })
+      .catch((err) => console.log("falla crear", err))
+      .finally(() => {
+        setInputValue("");
+      });
   };
 
-  const onDelete = (index) => {
-    const newArr = [...tasksList];
-    newArr.splice(index, 1);
-    setTasksList(newArr);
+  const onDelete = (id) => {
+    const newArray = [...tasksList];
+    fetch(`https://playground.4geeks.com/todo/todos/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Error en solicitud de eliminar");
+        }
+        return response;
+      })
+      .then(() => {
+        const filterTaskList = newArray.filter((item) => item.id != id);
+        setTasksList(filterTaskList);
+      })
+      .catch((err) => console.log("error al borrar", err));
   };
 
   console.log("task", tasksList);
@@ -37,13 +86,13 @@ function App() {
       {tasksList.length ? (
         tasksList.map((item, index) => {
           return (
-            <Task key={index} text={item}>
-              <DeleteBtn onClick={() => onDelete(index)} />
+            <Task key={item.id} text={item.label}>
+              <DeleteBtn onClick={() => onDelete(item.id)} />
             </Task>
           );
         })
       ) : (
-        <h1>nada que hacer</h1>
+        <h1>No hay tareas pedientes</h1>
       )}
     </div>
   );
