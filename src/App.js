@@ -10,13 +10,24 @@ function App() {
   const [inputValue, setInputValue] = useState("");
 
   useEffect(() => {
-    fetch("https://playground.4geeks.com/todo/users/lesgarcia")
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data.todos);
-        setTasksList(data.todos);
-      });
+    createUser();
   }, []);
+
+  const createUser = async () => {
+    const response = await fetch(
+      "https://playground.4geeks.com/todo/users/lesgarcia",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+      }
+    );
+
+    const responseJSON = await response.json();
+
+    console.log("response to Json", responseJSON);
+  };
 
   const handleOnchange = (e) => {
     setInputValue(e.target.value);
